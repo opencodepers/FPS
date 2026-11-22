@@ -99,6 +99,15 @@ async function target() {
     console.log("LOCKED " + JSON.stringify(await evalJson("({ locked: !!document.pointerLockElement, scripts: [...document.scripts].map(s => s.src.split('/').pop()) })")));
   }
   if (wantHold) { await send("Input.dispatchKeyEvent", { type: "keyDown", code: "KeyF", key: "f", windowsVirtualKeyCode: 70 }); await sleep(1500); }
+  // A fast human click: press and release back-to-back, with no frame in
+  // between. Polling a held-button flag at frame rate drops this click.
+  if (args.includes("--tap")) {
+    await send("Page.bringToFront");
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x: 450, y: 400, button: "left", buttons: 1, clickCount: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 450, y: 400, button: "left", buttons: 0, clickCount: 1 });
+    await sleep(600);
+    console.log("TAP_STATE " + JSON.stringify(await evalJson("({ w: window.__weapon ? window.__weapon.state() : null, gunhint: (document.getElementById('gunhint') || {}).className })")));
+  }
   // Firing needs the rifle up, so this runs after --hold.
   if (args.includes("--fire")) {
     await send("Page.bringToFront");

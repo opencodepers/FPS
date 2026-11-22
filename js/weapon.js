@@ -42,6 +42,7 @@
     const crossEl = document.getElementById("crosshair");
     const hitEl = document.getElementById("hitmark");
     const toastEl = document.getElementById("toast");
+    const gunHintEl = document.getElementById("gunhint");
     const forceFire = /[?&]fire=1/.test(location.search);
     const fireLog = forceFire || /[?&]firelog=1/.test(location.search);
 
@@ -99,6 +100,7 @@
     let cooldown = 0;
     let reloadTimer = 0;
     let trigger = false;
+    let fireQueued = false;
     let rifleUp = false;
     let shake = 0;
     let shots = 0;
@@ -107,7 +109,14 @@
     let toastTimer = 0;
     const shakeOff = new BABYLON.Vector3();
 
-    addEventListener("mousedown", (e) => { if (e.button === 0) trigger = true; });
+    // A click is QUEUED, not only sampled: a quick click releases inside the
+    // same frame, and polling a held flag dropped every one of them (measured:
+    // mousePressed+mouseReleased back to back = 0 shots with the rifle up).
+    addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      trigger = true;
+      fireQueued = true;
+    });
     addEventListener("mouseup", (e) => { if (e.button === 0) trigger = false; });
     addEventListener("blur", () => { trigger = false; });
     addEventListener("contextmenu", (e) => e.preventDefault());
@@ -185,12 +194,17 @@
       } else if (ammo <= 0) {
         reloadTimer = RELOAD;
         setAmmoText("RELOADING");
-      } else if ((trigger || forceFire) && rifleUp && cooldown <= 0) {
-        fire();
-      } else if (trigger && !rifleUp && cooldown <= 0) {
-        cooldown = 0.6;
-        showToast("HOLD F TO RAISE THE RIFLE");
+        fireQueued = false;
+      } else if (fireQueued || trigger || forceFire) {
+        if (rifleUp && cooldown <= 0) fire();
+        else if (!rifleUp && cooldown <= 0) {
+          cooldown = 0.6;
+          showToast("HOLD F TO RAISE THE RIFLE");
+        }
+        fireQueued = false;
       }
+      // Says what is missing until the first shot lands, then stays out of the way.
+      if (gunHintEl) gunHintEl.classList.toggle("on", !rifleUp && shots === 0);
       if (fx) fx.update(dt);
 
       if (hitTimer > 0) {
@@ -227,7 +241,7 @@
       : fx.sparks.getActiveCount ? fx.sparks.getActiveCount() : (fx.sparks.particles || []).length);
     return {
       update, fire, reset,
-      state: () => ({ ammo, reloadTimer, shots, hits, rifleUp, shake, hasMuzzle: !!muzzleLocal, fx: !!fx, sparks: activeSparks() }),
+      state: () => ({ ammo, reloadTimer, shots, hits, rifleUp, shake, queued: fireQueued, hasMuzzle: !!muzzleLocal, fx: !!fx, sparks: activeSparks() }),
     };
   }
 
