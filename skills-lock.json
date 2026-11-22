@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "skills": {
+    "cavemenko": {
+      "source": "ruslanlap/cavemenko",
+      "commit": "cb1d5f42774682ded8029c67c55ac62df95568dd",
+      "sourceType": "github",
+      "skillPath": "skills/cavemenko/SKILL.md",
+      "computedHash": "0e1f7f93e254cc8e410a5cf6037c4fa0a56a554fe3412fce8ae45115a1be12ee"
+    },
+    "hyperlean": {
+      "source": "opencodepers/hyper",
+      "commit": "c341a7f3ceffbade0cdae0c9a2db819b850bc57e",
+      "sourceType": "github",
+      "skillPath": "skills/hyperlean/SKILL.md",
+      "computedHash": "950e6a364a8983ff9ea7da7e2959a667993a41928b4b8a8d820a1171b94906fc"
+    },
+    "hypershell": {
+      "source": "opencodepers/hyper",
+      "commit": "c341a7f3ceffbade0cdae0c9a2db819b850bc57e",
+      "sourceType": "github",
+      "skillPath": "skills/hypershell/SKILL.md",
+      "computedHash": "60049a3e16359387203110d22f3982a2e5102c88f381ed3ed3db23f483edb530"
+    },
+    "hyperslop": {
+      "source": "opencodepers/hyper",
+      "commit": "c341a7f3ceffbade0cdae0c9a2db819b850bc57e",
+      "sourceType": "github",
+      "skillPath": "skills/hyperslop/SKILL.md",
+      "computedHash": "38588bafe4016dc0566aedb6e365e32534a47be41817bed30262ad5104141efe"
+    },
+    "ponytail": {
+      "source": "DietrichGebert/ponytail",
+      "commit": "ebd8654c2c627f721eb8f9c0d1bd4090a29f9e10",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "computedHash": "56d72677aca02689ac89bd48734e8c19b40ab86716d1257eaf5f1238b43cda6b"
+    },
+    "yagni": {
+      "source": "JordanCoin/codingskills",
+      "commit": "d990b56b72f3f4203c13d1ef40e815893d9e7c54",
+      "sourceType": "github",
+      "skillPath": "skills/yagni/SKILL.md",
+      "computedHash": "c80d7580baf6aca32b638b0d3111d380f7e545b9b9784290eb51bef134ded81c"
+    }
+  }
+}

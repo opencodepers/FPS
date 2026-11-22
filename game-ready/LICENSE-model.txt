@@ -1,0 +1,11 @@
+Model Information:
+* title:	Rigged Character
+* source:	https://sketchfab.com/3d-models/rigged-character-6ead91e980434073bfb15799d3e674bb
+* author:	BLENDERJO (https://sketchfab.com/BLENDERJO)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Rigged Character" (https://sketchfab.com/3d-models/rigged-character-6ead91e980434073bfb15799d3e674bb) by BLENDERJO (https://sketchfab.com/BLENDERJO) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

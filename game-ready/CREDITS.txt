@@ -1,0 +1,10 @@
+Quaternius Mannequin — Babylon demo
+
+Character, skeleton and animations:
+  Quaternius — Universal Animation Library (quaternius.com)
+  License: CC0 1.0 Universal (public domain)
+
+Packed from the free Standard release (glTF + bin) into
+game-ready/quaternius_mannequin.glb by tools/pack-character.mjs.
+No retargeting: the mesh, its 53-bone skeleton and all 46 clips are authored
+together and play natively.
