@@ -55,31 +55,25 @@
       return skinned.getWorldMatrix().multiply(hand.getAbsoluteMatrix());
     };
 
-    // ---- muzzle: far end of the barrel, in the hand frame ----------------
-    let muzzleLocal = null;
-    const parts = scene.meshes.filter((m) => m.isEnabled() && RIFLE_RE.test(m.name)
-      && m.getTotalVertices && m.getTotalVertices() > 0);
-    const barrel = parts.find((m) => /barrel/i.test(m.name) && !/scope/i.test(m.name));
-    if (barrel && parts.length > 1) {
-      const at = (m) => m.getBoundingInfo().boundingBox.centerWorld;
-      const all = parts.reduce((a, m) => a.addInPlace(at(m)), new BABYLON.Vector3()).scaleInPlace(1 / parts.length);
-      const bc = at(barrel);
-      const dir = bc.subtract(all);
-      if (dir.lengthSquared() > 1e-10) {
-        dir.normalize();
-        let far = null;
-        let best = -Infinity;
-        for (const p of barrel.getBoundingInfo().boundingBox.vectorsWorld) {
-          const d = BABYLON.Vector3.Dot(p.subtract(bc), dir);
-          if (d > best) { best = d; far = p; }
-        }
-        if (far) muzzleLocal = BABYLON.Vector3.TransformCoordinates(far.clone(), handWorld().invert());
-      }
-    }
+    // ---- muzzle ----------------------------------------------------------
+    // The rifle is skinned, so its mesh bounds are the PRE-SKIN rest geometry:
+    // measuring the barrel tip from them put the flash 16 m above and behind the
+    // player (seen in the fire log). The gun is welded to DEF-hand.R, so the
+    // muzzle is the hand plus the rifle's length along the facing direction,
+    // which is where the aim clip holds the barrel.
+    const MUZZLE_REACH = 0.55;
     const muzzleAt = new BABYLON.Vector3();
+    const handAt = new BABYLON.Vector3();
     function muzzle() {
-      if (muzzleLocal) return BABYLON.Vector3.TransformCoordinates(muzzleLocal, handWorld(), muzzleAt);
-      return muzzleAt.copyFrom(camera.position);
+      if (!hand) return muzzleAt.copyFrom(camera.position);
+      skinned.computeWorldMatrix(true);
+      BABYLON.Vector3.TransformCoordinatesToRef(hand.getAbsolutePosition(), skinned.getWorldMatrix(), handAt);
+      const f = player.state.facing;
+      return muzzleAt.set(
+        handAt.x + Math.sin(f) * MUZZLE_REACH,
+        handAt.y + 0.03,
+        handAt.z + Math.cos(f) * MUZZLE_REACH
+      );
     }
 
     // ---- bullet holes ----------------------------------------------------
@@ -94,6 +88,70 @@
       marks.push(disc);
     }
     let markNext = 0;
+
+    // ---- practice dummies ------------------------------------------------
+    // Wooden pop-ups down the spawn lane. Each is a post, a board and a head
+    // parented to a root sitting on the floor, so a hit can tip the whole rig
+    // about its base. It lies there for a moment, then springs back up, which
+    // keeps the range shootable without a reset key.
+    const FALL_TIME = 0.4;
+    const DOWN_TIME = 2.4;
+    const dummyMat = new BABYLON.StandardMaterial("dummyBoard", scene);
+    dummyMat.diffuseColor = BABYLON.Color3.FromHexString("#c9a06a");
+    dummyMat.specularColor = BABYLON.Color3.Black();
+    const dummyPostMat = emissive("dummyPostMat", "#7a5b3a", null, scene);
+    const dummyBullMat = emissive("dummyBullMat", "#b2382f", null, scene);
+    const FALL = new BABYLON.Quaternion();
+    const dummies = [];
+
+    for (const [x, z] of [[-0.5, 9.5], [-2.2, 6.6], [1.6, 4.4], [-1.6, 1.4], [1.4, -1.8]]) {
+      const root = new BABYLON.TransformNode("dummy", scene);
+      root.position.set(x, 0, z);
+      root.rotationQuaternion = BABYLON.Quaternion.Identity();
+      const part = (name, w, h, d, y, mat, zOff) => {
+        const m = BABYLON.MeshBuilder.CreateBox(name, { width: w, height: h, depth: d }, scene);
+        m.parent = root;
+        m.position.y = y;
+        if (zOff) m.position.z = zOff;
+        m.material = mat;
+        m.receiveShadows = true;
+        return m;
+      };
+      part("dummyPost", 0.12, 0.9, 0.12, 0.45, dummyPostMat);
+      part("dummyBoard", 0.62, 0.78, 0.1, 1.34, dummyMat);
+      part("dummyHead", 0.28, 0.28, 0.28, 1.87, dummyMat);
+      const bull = BABYLON.MeshBuilder.CreateDisc("dummyBullseye", { radius: 0.13, tessellation: 16 }, scene);
+      bull.parent = root;
+      bull.position.set(0, 1.34, 0.055);
+      bull.material = dummyBullMat;
+      const dummy = { root, t: -1 };
+      root.metadata = { dummy };
+      dummies.push(dummy);
+    }
+
+    // The hit can land on any child, so walk up to the root that owns the pose.
+    function dummyOf(mesh) {
+      for (let n = mesh; n; n = n.parent) {
+        if (n.metadata && n.metadata.dummy) return n.metadata.dummy;
+      }
+      return null;
+    }
+
+    function updateDummies(dt) {
+      const ease = (k) => 1 - (1 - k) * (1 - k);
+      for (const d of dummies) {
+        if (d.t < 0) continue;
+        d.t += dt;
+        let angle = 0;
+        if (d.t < FALL_TIME) angle = Math.PI / 2 * ease(d.t / FALL_TIME);
+        else if (d.t < FALL_TIME + DOWN_TIME) angle = Math.PI / 2;
+        else if (d.t < FALL_TIME * 2 + DOWN_TIME) angle = Math.PI / 2 * (1 - ease((d.t - FALL_TIME - DOWN_TIME) / FALL_TIME));
+        else d.t = -1;
+        // +X tips the top toward -Z, i.e. away from the shooter at spawn.
+        BABYLON.Quaternion.RotationAxisToRef(BABYLON.Axis.X, angle, FALL);
+        d.root.rotationQuaternion.copyFrom(FALL);
+      }
+    }
 
     // ---- state -----------------------------------------------------------
     let ammo = MAG;
@@ -171,12 +229,16 @@
       if (pick && pick.hit) {
         hits++;
         const n = (pick.getNormal(true) || BABYLON.Axis.Y).normalize();
+        const dummy = dummyOf(pick.pickedMesh);
+        if (dummy && dummy.t < 0) dummy.t = 0;
         if (fx) fx.impactBurst(pick.pickedPoint, n);
         placeMark(pick.pickedPoint, n);
         markHit();
       }
       if (fireLog) {
         console.log("FIRE", shots, "ammo", ammo, "len", to.subtract(from).length().toFixed(1),
+          "from", from.x.toFixed(2), from.y.toFixed(2), from.z.toFixed(2),
+          "to", to.x.toFixed(2), to.y.toFixed(2), to.z.toFixed(2),
           "hit", pick && pick.hit ? pick.pickedMesh.name : "miss", "hits", hits);
       }
     }
@@ -205,6 +267,7 @@
       }
       // Says what is missing until the first shot lands, then stays out of the way.
       if (gunHintEl) gunHintEl.classList.toggle("on", !rifleUp && shots === 0);
+      updateDummies(dt);
       if (fx) fx.update(dt);
 
       if (hitTimer > 0) {
@@ -241,7 +304,8 @@
       : fx.sparks.getActiveCount ? fx.sparks.getActiveCount() : (fx.sparks.particles || []).length);
     return {
       update, fire, reset,
-      state: () => ({ ammo, reloadTimer, shots, hits, rifleUp, shake, queued: fireQueued, hasMuzzle: !!muzzleLocal, fx: !!fx, sparks: activeSparks() }),
+      state: () => ({ ammo, reloadTimer, shots, hits, rifleUp, shake, queued: fireQueued, down: dummies.filter((d) => d.t >= 0).length,
+        muzzle: [+muzzle().x.toFixed(2), +muzzle().y.toFixed(2), +muzzle().z.toFixed(2)], hasMuzzle: !!hand, fx: !!fx, sparks: activeSparks() }),
     };
   }
 
