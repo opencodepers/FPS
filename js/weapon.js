@@ -104,7 +104,7 @@
     const FALL = new BABYLON.Quaternion();
     const dummies = [];
 
-    for (const [x, z] of [[-0.5, 9.5], [-2.2, 6.6], [1.6, 4.4], [-1.6, 1.4], [1.4, -1.8]]) {
+    for (const [x, z] of [[0, 10.1], [-2.2, 6.6], [1.6, 4.4], [-1.6, 1.4], [1.4, -1.8]]) {
       const root = new BABYLON.TransformNode("dummy", scene);
       root.position.set(x, 0, z);
       root.rotationQuaternion = BABYLON.Quaternion.Identity();
@@ -160,6 +160,7 @@
     let trigger = false;
     let fireQueued = false;
     let rifleUp = false;
+    let aimed = false;
     let shake = 0;
     let shots = 0;
     let hits = 0;
@@ -217,9 +218,20 @@
       shake = Math.min(shake + SHAKE_PER_SHOT, 0.12);
 
       const from = muzzle().clone();
-      const ray = scene.createPickingRay(engine.getRenderWidth() * 0.5, engine.getRenderHeight() * 0.5, BABYLON.Matrix.Identity(), camera);
-      const pick = scene.pickWithRay(ray, (m) => m.isPickable && m.isEnabled()
-        && !RIFLE_RE.test(m.name) && !/^impact|^fx/i.test(m.name));
+      const pickable = (m) => m.isPickable && m.isEnabled()
+        && !RIFLE_RE.test(m.name) && !/^impact|^fx/i.test(m.name);
+      // Over the shoulder the crosshair is a real reticle, so shoot where the
+      // camera looks. In the chase camera the crosshair sits on the player’s own
+      // back: that ray hit the floor ~5 m ahead and drew the impact over the
+      // body, so hip fire leaves the muzzle level along the facing direction.
+      let ray;
+      if (aimed) {
+        ray = scene.createPickingRay(engine.getRenderWidth() * 0.5, engine.getRenderHeight() * 0.5, BABYLON.Matrix.Identity(), camera);
+      } else {
+        const f = player.state.facing;
+        ray = new BABYLON.Ray(from, new BABYLON.Vector3(Math.sin(f), 0, Math.cos(f)), RANGE);
+      }
+      const pick = scene.pickWithRay(ray, pickable);
       const to = pick && pick.hit ? pick.pickedPoint.clone() : ray.origin.add(ray.direction.scale(RANGE));
 
       if (fx) {
@@ -243,8 +255,9 @@
       }
     }
 
-    function update(dt, up) {
+    function update(dt, up, aim) {
       rifleUp = !!up;
+      aimed = !!aim;
       if (crossEl) crossEl.classList.toggle("hidden", !rifleUp);
       cooldown = Math.max(0, cooldown - dt);
       if (reloadTimer > 0) {

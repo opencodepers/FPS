@@ -481,17 +481,16 @@
         jump: jumpQueued,
       };
       jumpQueued = false;
-      // Rifle up also means the over-shoulder aim camera. With the plain chase
-      // camera the crosshair sits on the character's own back, so an impact
-      // downrange projects onto the body and reads as shooting yourself.
+      // Rifle up does NOT move the camera: F raises the gun and keeps the chase
+      // view, right mouse is what pulls the view over the shoulder.
       const rifleUp = aiming || forceAim || forceHold || keys.has("KeyF");
-      if (player.setAim) player.setAim(rifleUp);
+      if (player.setAim) player.setAim(aiming || forceAim);
       player.update(dt, cmd);
       // S plays the locomotion clips in reverse: the feet step backwards.
       const back = cmd.forward < 0 && cmd.right === 0;
       // F holds the rifle up; without it the arms use the locomotion clips.
       animator.update(dt, player.state.speed, player.state.grounded, player.state.justLanded, player.state.climb, back, rifleUp);
-      if (weapon) weapon.update(dt, rifleUp);
+      if (weapon) weapon.update(dt, rifleUp, aiming || forceAim);
       if (speedEl) speedEl.textContent = player.state.speed.toFixed(1);
       if (stateEl) stateEl.textContent = player.state.state;
       if (camEl && player.camMode !== camShown) {
