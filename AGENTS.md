@@ -43,3 +43,8 @@ duplicate or reword the skills.
 - Bones: pelvis is `DEF-hips` (not `DEF-pelvis`); slices in
   `js/animations.js` (UPPER / LOWER / AIM_RUN) must match real bone names.
 - Debug URL hooks: `?aim=1` (aim camera without a mouse), `?cammode=N`, `?hold=1`, `?run=1`, `?cam=x,y,z,tx,ty,tz`.
+
+## Git
+
+- Commit and push only when the user asks. Never commit or push on your own,
+  and never bundle a commit into an unrelated request.
