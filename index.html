@@ -27,6 +27,21 @@
     font-size:12px; letter-spacing:.18em; color:#17191f; transition:opacity .25s ease; }
   #status.hidden { opacity:0; }
   #status.error { color:#a3263a; letter-spacing:.04em; text-align:center; max-width:520px; line-height:1.6; }
+  #ammo { color:#e9edf5; font-variant-numeric:tabular-nums; }
+  #ammo.empty { color:var(--air); }
+  #crosshair { position:fixed; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px;
+    border-radius:50%; background:rgba(255,255,255,.9); box-shadow:0 0 0 1px rgba(23,25,31,.55);
+    pointer-events:none; transition:opacity .12s ease; }
+  #crosshair.hidden { opacity:0; }
+  #hitmark { position:fixed; left:50%; top:50%; width:22px; height:22px; margin:-11px 0 0 -11px;
+    border:2px solid rgba(255,255,255,.95); border-radius:50%; pointer-events:none; opacity:0;
+    transform:scale(.55); transition:opacity .07s ease-out, transform .12s ease-out; }
+  #hitmark.on { opacity:1; transform:scale(1); }
+  #toast { position:fixed; left:50%; top:calc(50% + 34px); transform:translateX(-50%);
+    padding:8px 14px; border-radius:999px; background:rgba(23,25,31,.86); color:var(--air);
+    border:1px solid var(--line); font-size:10px; letter-spacing:.16em; pointer-events:none;
+    opacity:0; transition:opacity .15s ease; }
+  #toast.on { opacity:1; }
   #hint { position:fixed; left:50%; bottom:44px; transform:translateX(-50%);
     padding:10px 18px; border-radius:999px; background:rgba(23,25,31,.8); color:#e9edf5;
     border:1px solid var(--line); font-size:11px; letter-spacing:.18em; pointer-events:none;
@@ -45,14 +60,18 @@
     <div><span id="mGround" class="ground">GROUND</span></div>
     <div>CAM <span id="mCam">CHASE</span></div>
     <div>FPS <span id="mFps">60</span></div>
+    <div>AMMO <span id="ammo">30 / 30</span></div>
   </div>
   <div class="meta"><div>TRIS <span id="mTris">–</span></div><div>JOINTS <span id="mJoints">53</span></div><div>HEIGHT <span id="mHeight">–</span></div></div>
   <div class="keys">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> WALK &middot; <kbd>SHIFT</kbd> SPRINT<br>
     <kbd>SPACE</kbd> JUMP &middot; <kbd>R</kbd> RESET &middot; <kbd>U</kbd> CAMERA &middot; <kbd>F</kbd> HOLD RIFLE<br>
-    MOUSE LOOK &middot; <kbd>ESC</kbd> RELEASE
+    <kbd>F</kbd> + <kbd>LMB</kbd> SHOOT &middot; MOUSE LOOK &middot; <kbd>ESC</kbd> RELEASE
   </div>
 </div>
+<div id="crosshair" class="hidden"></div>
+<div id="hitmark"></div>
+<div id="toast"></div>
 <div id="hint" class="hidden">CLICK TO LOOK</div>
 <div id="status">LOADING ARENA&hellip;</div>
 
@@ -63,6 +82,8 @@
 <script src="js/controller.js?v=15"></script>
 <script src="js/animations.js?v=28"></script>
 <script src="js/footik.js?v=8"></script>
-<script src="js/main.js?v=71"></script>
+<script src="js/fx.js?v=1"></script>
+<script src="js/weapon.js?v=4"></script>
+<script src="js/main.js?v=76"></script>
 </body>
 </html>

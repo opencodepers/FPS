@@ -36,6 +36,20 @@
   camera.maxZ = 300;
   camera.fov = 0.92;
 
+  // Juice: bloom is what makes the muzzle flash, tracers and sparks read as
+  // light instead of flat geometry; the vignette keeps the eye in the middle.
+  if (BABYLON.DefaultRenderingPipeline) {
+    const juice = new BABYLON.DefaultRenderingPipeline("juice", true, scene, [camera]);
+    juice.bloomEnabled = true;
+    juice.bloomThreshold = 0.7;
+    juice.bloomWeight = 0.4;
+    juice.bloomKernel = 48;
+    juice.vignetteEnabled = true;
+    juice.vignetteWeight = 1.4;
+    juice.vignetteColour = new BABYLON.Color4(0.04, 0.05, 0.09, 1);
+    juice.fxaaEnabled = true;
+  }
+
   // ---------------------------------------------------------------- lights
   const hemi = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(0.2, 1, 0.15), scene);
   hemi.intensity = 0.58;
@@ -99,7 +113,10 @@
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
     keys.add(e.code);
     if (e.code === "Space" && !e.repeat) jumpQueued = true;
-    if (e.code === "KeyR" && window.__player) window.__player.reset();
+    if (e.code === "KeyR" && window.__player) {
+      window.__player.reset();
+      if (window.__weapon) window.__weapon.reset();
+    }
     if (e.code === "KeyU" && window.__player && window.__player.nextCamera) window.__player.nextCamera();
   });
   addEventListener("keyup", (e) => keys.delete(e.code));
@@ -108,6 +125,7 @@
   let player = null;
   let animator = null;
   let footIK = null;
+  let weapon = null;
   let gunMount = null;
   let gunLoaded = false;
   // Rifle binding: the mesh follows the DEF-hand.R bone matrix (see setup).
@@ -380,6 +398,12 @@
       getState: () => player.state,
     });
 
+    // Hitscan rifle on top of the baked gun: F (or right mouse) raises it, left
+    // mouse fires. The muzzle is measured from the barrel mesh in the hand
+    // bone's frame, so it tracks every pose.
+    weapon = window.createWeapon(scene, { camera, player, skinned, statusEl });
+    window.__weapon = weapon;
+
     document.getElementById("mTris").textContent = Math.round(tris).toLocaleString();
     document.getElementById("mJoints").textContent = String(joints || 53);
     try {
@@ -463,6 +487,8 @@
       const back = cmd.forward < 0 && cmd.right === 0;
       // F holds the rifle up; without it the arms use the locomotion clips.
       animator.update(dt, player.state.speed, player.state.grounded, player.state.justLanded, player.state.climb, back, forceHold || keys.has("KeyF"));
+      const rifleUp = aiming || forceHold || keys.has("KeyF");
+      if (weapon) weapon.update(dt, rifleUp);
       if (speedEl) speedEl.textContent = player.state.speed.toFixed(1);
       if (stateEl) stateEl.textContent = player.state.state;
       if (camEl && player.camMode !== camShown) {

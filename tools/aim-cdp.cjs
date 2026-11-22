@@ -70,7 +70,10 @@ async function target() {
       hold: a.hold ? +a.hold.weight.toFixed(2) : null,
       holdRun: a.holdRun ? +a.holdRun.weight.toFixed(2) : null,
       runHold: a.runHold ? +a.runHold().toFixed(2) : null,
-      lean: p.state.turnLean };
+      lean: p.state.turnLean,
+      ammo: (document.getElementById("ammo") || {}).textContent || null,
+      toast: (document.getElementById("toast") || {}).className || null,
+      weapon: window.__weapon ? window.__weapon.state() : null };
   })()`);
 
   if (args.includes("--look")) {
@@ -86,7 +89,31 @@ async function target() {
     await send("Input.dispatchKeyEvent", { type: "keyDown", code: "KeyW", key: "w", windowsVirtualKeyCode: 87 });
     await sleep(1500);
   }
+  // A human clicks the canvas first (pointer lock), and that click is also a
+  // shot in the real game, so reproduce it: lock, then hold F, then fire.
+  if (args.includes("--lock")) {
+    await send("Page.bringToFront");
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x: 450, y: 380, button: "left", buttons: 1, clickCount: 1 });
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 450, y: 380, button: "left", buttons: 0, clickCount: 1 });
+    await sleep(400);
+    console.log("LOCKED " + JSON.stringify(await evalJson("({ locked: !!document.pointerLockElement, scripts: [...document.scripts].map(s => s.src.split('/').pop()) })")));
+  }
   if (wantHold) { await send("Input.dispatchKeyEvent", { type: "keyDown", code: "KeyF", key: "f", windowsVirtualKeyCode: 70 }); await sleep(1500); }
+  // Firing needs the rifle up, so this runs after --hold.
+  if (args.includes("--fire")) {
+    await send("Page.bringToFront");
+    await send("Input.dispatchMouseEvent", { type: "mousePressed", x: 450, y: 400, button: "left", buttons: 1, clickCount: 1 });
+    await sleep(700);
+    if (!(await evalJson("window.__weapon ? window.__weapon.state().shots : 0"))) {
+      await evalJson('dispatchEvent(new MouseEvent("mousedown",{button:0,buttons:1,bubbles:true}))');
+      await sleep(700);
+    }
+    const st = await evalJson("window.__weapon ? window.__weapon.state() : null");
+    console.log("FIRE_STATE " + JSON.stringify(st));
+    console.log("FIRE_LOG " + JSON.stringify(logs.filter((l) => /^FIRE /.test(l)).slice(0, 4)));
+    await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: 450, y: 400, button: "left", buttons: 0, clickCount: 1 });
+    await evalJson('dispatchEvent(new MouseEvent("mouseup",{button:0,buttons:0,bubbles:true}))');
+  }
   if (wantAim) {
     await send("Page.bringToFront");
     await send("Input.dispatchMouseEvent", { type: "mousePressed", x: 450, y: 400, button: "right", buttons: 2, clickCount: 1 });
